@@ -11,10 +11,12 @@
     "dev:docker": "turbo dev --filter=@repo/docker",
     "docker:down": "docker compose -f packages/docker/docker-compose.yml down",
     "docker:admin-key": "turbo admin-key --filter=@repo/docker",
+    "docker:start": "docker compose -f packages/docker/docker-compose.yml up -d",
     "convex:deploy": "turbo deploy --filter=@repo/convex-backend",
     "build": "turbo build",
     "lint": "turbo lint",
-    "stop": "docker compose -f packages/docker/docker-compose.yml down"
+    "stop": "docker compose -f packages/docker/docker-compose.yml down",
+    "deploy": "docker compose -f packages/docker/docker-compose.yml up -d && turbo deploy --filter=@repo/convex-backend && turbo build --filter=web"
   },
   "devDependencies": {
     "turbo": "^2.3.4"
