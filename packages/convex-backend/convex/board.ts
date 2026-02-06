@@ -38,12 +38,22 @@ export const togglePause = mutation({
 // 1. Any live cell with 2 or 3 neighbors survives
 // 2. Any dead cell with exactly 3 neighbors becomes alive
 // 3. All other live cells die, all other dead cells stay dead
+// Throttled to prevent multiple clients from triggering simultaneous ticks
+const TICK_THROTTLE_MS = 150; // Slightly less than client interval to allow graceful updates
+
 export const tick = mutation({
   args: { id: v.id("boards") },
   handler: async (ctx, args) => {
     const board = await ctx.db.get(args.id);
     if (!board) throw new Error("Board not found");
     if (board.isPaused) return;
+
+    // Throttle tick calls - only allow one tick per TICK_THROTTLE_MS
+    const now = Date.now();
+    const lastTick = board.lastTickTime || 0;
+    if (now - lastTick < TICK_THROTTLE_MS) {
+      return; // Ignore this tick call, too soon
+    }
 
     // Get all living cells for this board
     const cells = await ctx.db
@@ -100,18 +110,21 @@ export const tick = mutation({
       }
     }
 
-    // Create new cells
-    for (const key of nextGeneration) {
-      if (!livingCells.has(key)) {
-        const [x, y] = key.split(",").map(Number);
-        await ctx.db.insert("cells", {
-          boardId: args.id,
-          x,
-          y,
-        });
-      }
-    }
-  },
+     // Create new cells
+     for (const key of nextGeneration) {
+       if (!livingCells.has(key)) {
+         const [x, y] = key.split(",").map(Number);
+         await ctx.db.insert("cells", {
+           boardId: args.id,
+           x,
+           y,
+         });
+       }
+     }
+
+     // Update last tick time for throttling
+     await ctx.db.patch(args.id, { lastTickTime: now });
+   },
 });
 
 export const clear = mutation({

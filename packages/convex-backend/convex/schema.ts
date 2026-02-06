@@ -5,6 +5,7 @@ export default defineSchema({
   boards: defineTable({
     name: v.string(),
     isPaused: v.boolean(),
+    lastTickTime: v.optional(v.number()),
   }),
   cells: defineTable({
     boardId: v.id("boards"),
